@@ -795,51 +795,7 @@ def download_snapshot(network, osmosis_home):
     """
 
     def install_snapshot_prerequisites():
-        """
-        Installs the prerequisites: Homebrew (brew) package manager and lz4 compression library.
-
-        Args:
-            osmosis_home (str): The path of the Osmosis home directory.
-
-        """
-        while True:
-            print(bcolors.OKGREEN + f"""
-To download the snapshot, we need the lz4 compression library.
-Do you want me to install it?
-
-    1) Yes, install lz4
-    2) No, continue without installing lz4
-        """ + bcolors.ENDC)
-
-            choice = input("Enter your choice, or 'exit' to quit: ").strip()
-
-            if choice.lower() == "exit":
-                print("Exiting the program...")
-                sys.exit(0)
-
-            if choice == Answer.YES:
-                break
-
-            elif choice == Answer.NO:
-                clear_screen()
-                return
-
-            else:
-                print("Invalid choice. Please enter 1 or 2.")
-
-        operating_system = platform.system().lower()
-        if operating_system == "linux":
-            print("Installing lz4...")
-            subprocess.run(["sudo apt-get install wget liblz4-tool aria2 -y"],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
-        else:
-            print("Installing Homebrew...")
-            subprocess.run(['bash', '-c', '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)'])
-
-            print("Installing lz4...")
-            subprocess.run(['brew', 'install', 'lz4'])
-
-        print("Installation completed successfully.")
+        subprocess.run(["sudo apt-get update && sudo apt-get install wget liblz4-tool aria2 -y"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
         clear_screen()
 
 
@@ -941,27 +897,12 @@ Choose one of the following snapshots:
 
     install_snapshot_prerequisites()
     snapshots = parse_snapshot_info(network)
-
-    while True:
-
-        print_snapshot_download_info(snapshots)
-        choice = input("Enter your choice, or 'exit' to quit: ").strip()
-
-        if choice.lower() == "exit":
-            print("Exiting the program...")
-            sys.exit(0)
-
-        if int(choice) < 0 or int(choice) > len(snapshots):
-            clear_screen()
-            print(bcolors.RED + "Invalid input. Please choose a valid option." + bcolors.ENDC)
-        else:
-            break
-
-    snapshot_url = snapshots[int(choice) - 1]['url']
-
+    snapshot_url = snapshots.pop()['url']
+    
     try:
+        n_of_threads = os.cpu_count() * 2
         print(f"\n🔽 Downloading snapshots from {snapshot_url}")
-        download_process = subprocess.Popen(["wget", "-q", "-O", "-", snapshot_url], stdout=subprocess.PIPE)
+        download_process = subprocess.Popen(["aria2c", "-x", n_of_threads, "-s", n_of_threads, snapshot_url], stdout=subprocess.PIPE)
         lz4_process = subprocess.Popen(["lz4", "-d"], stdin=download_process.stdout, stdout=subprocess.PIPE)
         tar_process = subprocess.Popen(["tar", "-C", osmosis_home, "-xf", "-"], stdin=lz4_process.stdout, stdout=subprocess.PIPE)
 
