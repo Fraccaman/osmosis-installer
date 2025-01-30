@@ -902,7 +902,7 @@ Choose one of the following snapshots:
     try:
         n_of_threads = os.cpu_count() * 2
         print(f"\n🔽 Downloading snapshots from {snapshot_url}")
-        download_process = subprocess.Popen(["aria2c", "-x", n_of_threads, "-s", n_of_threads, snapshot_url], stdout=subprocess.PIPE)
+        download_process = subprocess.Popen(["aria2c", "-x", n_of_threads, "-s", n_of_threads, "--max-tries", 10, "--retry-wait", 15, snapshot_url], stdout=subprocess.PIPE)
         lz4_process = subprocess.Popen(["lz4", "-d"], stdin=download_process.stdout, stdout=subprocess.PIPE)
         tar_process = subprocess.Popen(["tar", "-C", osmosis_home, "-xf", "-"], stdin=lz4_process.stdout, stdout=subprocess.PIPE)
 
